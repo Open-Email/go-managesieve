@@ -928,8 +928,8 @@ func TestScriptNamesPreserveWhitespaceAndWhitespaceOnlySetActive(t *testing.T) {
 	// Script names with leading/trailing whitespace must be preserved verbatim across commands.
 	c.sendRaw("PUTSCRIPT \"  spaced  \" {5+}\r\nkeep;\r\n")
 	resp, _ = c.readResponse()
-	if resp != "OK" {
-		t.Fatalf("PUTSCRIPT spaced = %q, want OK", resp)
+	if resp != `OK "Script stored"` {
+		t.Fatalf("PUTSCRIPT spaced = %q, want OK \"Script stored\"", resp)
 	}
 
 	c.send(`GETSCRIPT "spaced"`)
@@ -970,15 +970,20 @@ func TestScriptNamesPreserveWhitespaceAndWhitespaceOnlySetActive(t *testing.T) {
 
 	c.send(`DELETESCRIPT "  renamed  "`)
 	resp, _ = c.readResponse()
-	if resp != "OK" {
-		t.Errorf("DELETESCRIPT renamed = %q, want OK", resp)
+	if resp != `OK "Script deleted"` {
+		t.Errorf("DELETESCRIPT renamed = %q, want OK \"Script deleted\"", resp)
 	}
 }
 
 func TestTrailingArgumentsRejected(t *testing.T) {
 	store := newTestStore()
 	store.AddScript("user@example.com", "main", "keep;", false)
-	addr := startDefaultServer(t, store)
+	addr := startServer(t, managesieveserver.Options{
+		NewSession:   store.NewSession,
+		InsecureAuth: true,
+		IdleTimeout:  5 * time.Second,
+		MaxErrors:    -1,
+	})
 
 	// Pre-auth commands with unexpected trailing arguments.
 	c := dial(t, addr)
