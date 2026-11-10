@@ -1026,4 +1026,3 @@ func TestTrailingArgumentsRejected(t *testing.T) {
 		}
 	}
 }
-
